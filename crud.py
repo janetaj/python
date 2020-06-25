@@ -1,6 +1,7 @@
 from flask import *
 from PIL import Image
-from datetime import date 
+from datetime import  datetime
+from resizeimage import resizeimage
 import sqlite3
 import os
 app = Flask(__name__)
@@ -57,14 +58,20 @@ def view():
     cur = con.cursor()
     cur.execute("select * from users")   
     rows = cur.fetchall()
-    current_date =  date.today()
-    return render_template("view.html",rows = rows, now_date = current_date)
+    return render_template("view.html",rows = rows,)
 
 @app.route("/<int:id>/view_user", methods=("GET", "POST"))
 def view_user(id):
     row = get_post(id)
-    current_date = date.today()
-    return render_template("view_user.html",row = row, now_date = current_date)
+    with sqlite3.connect("users.db") as con:
+        cur = con.cursor()        
+        #dob = cur.fetchone()
+        packages =  con.execute('Select date(dob) FROM users WHERE id = ?', (id,)).fetchone()
+        for dob in packages:
+            dob = datetime.strptime(dob, '%Y-%m-%d')
+            age = (datetime.today() - dob).days/365
+            age = round(age, 1)
+    return render_template("view_user.html",row = row, now_date = age,)
 
 @app.route("/<int:id>/edit_user", methods=("GET", "POST"))
 def edit_user(id):
