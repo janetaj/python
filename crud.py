@@ -2,12 +2,13 @@ from flask import *
 from PIL import Image
 from datetime import  datetime
 from resizeimage import resizeimage
+import glob
 import sqlite3
 import os
 app = Flask(__name__)
 #app.config.from_object(__name__)
 app.config['UPLOAD_DIR'] = 'static/Uploads'
-
+root_dir = 'static/Uploads'
 def get_post(id):
     con = sqlite3.connect("users.db")
     con.row_factory = sqlite3.Row
@@ -52,7 +53,7 @@ def saveDetails():
             con.close()
 
 @app.route("/view")
-def view():
+def view():    
     con = sqlite3.connect("users.db")
     con.row_factory = sqlite3.Row
     cur = con.cursor()
@@ -64,8 +65,13 @@ def view():
 def view_user(id):
     row = get_post(id)
     with sqlite3.connect("users.db") as con:
-        cur = con.cursor()        
-        #dob = cur.fetchone()
+        cur = con.cursor()
+        filename_or = row["profile_pic"]
+        with open('static/Uploads/' + filename_or, 'r+b') as f:
+            with Image.open(f) as image:
+                cover = resizeimage.resize_cover(image, [200, 200])
+                cover.save('static/resized/' + filename_or, image.format)
+                print("image got resized")
         packages =  con.execute('Select date(dob) FROM users WHERE id = ?', (id,)).fetchone()
         for dob in packages:
             dob = datetime.strptime(dob, '%Y-%m-%d')
