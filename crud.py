@@ -6,7 +6,6 @@ import glob
 import sqlite3
 import os
 app = Flask(__name__)
-#app.config.from_object(__name__)
 app.config['UPLOAD_DIR'] = 'static/Uploads'
 root_dir = 'static/Uploads'
 def get_post(id):
@@ -37,8 +36,6 @@ def saveDetails():
             contact = request.form["contact"]
             dob = request.form["dob"]
             file = request.files["profile_pic"]
-            #print(file)
-            #print(request.form["name"])
             file.save(os.path.join(app.config['UPLOAD_DIR'],file.filename))
             with sqlite3.connect("users.db") as con:
                 cur = con.cursor()   
@@ -67,17 +64,24 @@ def view_user(id):
     with sqlite3.connect("users.db") as con:
         cur = con.cursor()
         filename_or = row["profile_pic"]
-        with open('static/Uploads/' + filename_or, 'r+b') as f:
-            with Image.open(f) as image:
-                cover = resizeimage.resize_cover(image, [200, 200])
-                cover.save('static/resized/' + filename_or, image.format)
-                print("image got resized")
         packages =  con.execute('Select date(dob) FROM users WHERE id = ?', (id,)).fetchone()
         for dob in packages:
             dob = datetime.strptime(dob, '%Y-%m-%d')
             age = (datetime.today() - dob).days/365
             age = round(age, 1)
     return render_template("view_user.html",row = row, now_date = age,)
+
+@app.route("/<int:id>/resize_user", methods=("GET", "POST"))
+def resize_user(id):
+    row = get_post(id)
+    with sqlite3.connect("users.db") as con:
+        cur = con.cursor()
+        filename_or = row["profile_pic"]
+        with open('static/Uploads/' + filename_or, 'r+b') as f:
+            with Image.open(f) as image:
+                cover = resizeimage.resize_cover(image, [200, 200])
+                cover.save('static/Uploads/' + filename_or, image.format)      
+    return render_template("index.html");
 
 @app.route("/<int:id>/edit_user", methods=("GET", "POST"))
 def edit_user(id):
